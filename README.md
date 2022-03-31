@@ -1,1 +1,3 @@
 # burp_macro
+
+test
