@@ -18,7 +18,7 @@ class BurpExtender(IBurpExtender, IMessageEditorTabFactory):
         self._helpers = callbacks.getHelpers()
         
         # set our extension name
-        callbacks.setExtensionName("Serialized input editor")
+        callbacks.setExtensionName("CustomEditorTab")
         
         # debug
         self.stdout = PrintWriter(callbacks.getStdout(), True)
@@ -61,7 +61,7 @@ class Base64InputTab(IMessageEditorTab):
     def isEnabled(self, content, isRequest):
         # enable this tab for requests containing a data parameter
         
-        # [memo]リクエスト内容に"data"のパラメーターがあるとき、このタブが表示される。ProxyタブでもRepeaterタブでも。
+        # [memo] If parameter"data" in Request, this tab displayed. (Proxy, Repeater)
         return isRequest and not self._extender._helpers.getRequestParameter(content, "data") is None
         
         
