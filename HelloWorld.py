@@ -68,10 +68,54 @@ class BurpExtender(IBurpExtender,
         # --------------------        
         # register ourselves as a message editor tab factory
         # Proxy -> Request -> Tab
-        callbacks.registerMessageEditorTabFactory(self)
+        # callbacks.registerMessageEditorTabFactory(self)
         # --------------------
                 
-        
+                
+        def _make_three_Jpanel(self):
+            _tmp_split_three_pane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
+            
+            bottom_splitpane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
+            
+            leftpane = JPanel()
+            leftpane.add(JLabel('bottom left'))
+            rightpane = JPanel()
+            rightpane.add(JLabel('bottom right'))
+            
+            bottom_splitpane.setLeftComponent(leftpane)
+            bottom_splitpane.setRightComponent(rightpane)
+            
+            # self._split_three_pane.setTopComponent(toppane)
+            _tmp_split_three_pane.setBottomComponent(bottom_splitpane)
+            
+            
+            # table of log entries -> Top Panel
+            logTable = Table(self)
+            scrollPane = JScrollPane(logTable)
+            _tmp_split_three_pane.setTopComponent(scrollPane)
+
+            # tabs with request viewers  -> Bottom-Left Panel
+            tabs_left = JTabbedPane()
+            self._requestViewer = callbacks.createMessageEditor(self, False)
+            tabs_left.addTab("Request1", self._requestViewer.getComponent())
+            bottom_splitpane.setLeftComponent(tabs_left)
+
+            # tabs with response viewers  -> Bottom-Right Panel
+            tabs_right = JTabbedPane()
+            self._responseViewer = callbacks.createMessageEditor(self, False)
+            tabs_right.addTab("Response2", self._responseViewer.getComponent())
+            bottom_splitpane.setRightComponent(tabs_right)
+            
+            _tmp_split_three_pane.setBottomComponent(bottom_splitpane)
+            
+            # customize our UI components
+            # callbacks.customizeUiComponent(_tmp_split_three_pane)
+            # callbacks.customizeUiComponent(logTable)
+            # callbacks.customizeUiComponent(scrollPane)
+            # callbacks.customizeUiComponent(tabs_left)
+
+            return _tmp_split_three_pane
+
                 
         # 
         # *** [ addSuiteTab ]
@@ -80,139 +124,14 @@ class BurpExtender(IBurpExtender,
         self._log = ArrayList()
         self._lock = Lock()
         
-        # main split pane
-        # self._splitpane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
-        self._split_three_pane = JSplitPane(JSplitPane.VERTICAL_SPLIT)
-        
-        # toppane = JPanel()
-        # toppane.add(JLabel('top'))
-        
-        bottom_splitpane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT)
-        
-        leftpane = JPanel()
-        leftpane.add(JLabel('bottom left'))
-        rightpane = JPanel()
-        rightpane.add(JLabel('bottom right'))
-        
-        bottom_splitpane.setLeftComponent(leftpane)
-        bottom_splitpane.setRightComponent(rightpane)
-        
-        # self._split_three_pane.setTopComponent(toppane)
-        self._split_three_pane.setBottomComponent(bottom_splitpane)
-        
-        
-        # table of log entries -> Top Panel
-        logTable = Table(self)
-        scrollPane = JScrollPane(logTable)
-        self._split_three_pane.setTopComponent(scrollPane)
-
-        # tabs with request viewers  -> Bottom-Left Panel
-        tabs_left = JTabbedPane()
-        self._requestViewer = callbacks.createMessageEditor(self, False)
-        tabs_left.addTab("Request1", self._requestViewer.getComponent())
-        bottom_splitpane.setLeftComponent(tabs_left)
-
-        # tabs with response viewers  -> Bottom-Right Panel
-        tabs_right = JTabbedPane()
-        self._responseViewer = callbacks.createMessageEditor(self, False)
-        tabs_right.addTab("Response2", self._responseViewer.getComponent())
-        bottom_splitpane.setRightComponent(tabs_right)
-        
-        self._split_three_pane.setBottomComponent(bottom_splitpane)
-        
-        
-        # customize our UI components
-        # callbacks.customizeUiComponent(self._splitpane)
-        # callbacks.customizeUiComponent(logTable)
-        # callbacks.customizeUiComponent(scrollPane)
-        # callbacks.customizeUiComponent(tabs)
-        
+        self._split_three_pane = _make_three_Jpanel(self)
+                    
         # add the custom tab to Burp's UI
         callbacks.addSuiteTab(self)
         
         # register ourselves as an HTTP listener
-        # callbacks.registerHttpListener(self)
+        callbacks.registerHttpListener(self)
         # --------------------
-
-
-    # 
-    # ***[EventLisetr] 
-    # -----------------------------
-    #
-    # implement IHttpListener
-    #
-    def processHttpMessage(self, toolFlag, messageIsRequest, messageInfo):
-        # _tmp = ''
-        # _tmp += messageInfo.getHttpService().toString() + " [" + self._callbacks.getToolName(toolFlag) + "]"
-        # self._stdout.println(_tmp)
-        
-        if messageIsRequest:
-            # (Proxy) When Request
-            _tmp = "(HttpListener)Proxy request to "
-            
-            path = str(self._helpers.analyzeRequest(messageInfo.getRequest()).getHeaders()[0].split()[1])
-            val = messageInfo.getHttpService().getProtocol() + "://" \
-                    + messageInfo.getHttpService().getHost() + ":"   \
-                    + str(messageInfo.getHttpService().getPort()) + path
-                    
-            request = self._helpers.bytesToString(messageInfo.getRequest())
-            result = messageInfo
-            path_params = str(self._helpers.analyzeRequest(result.getRequest()).getHeaders()[0].split()[1])
-            # params = self._helpers.analyzeRequest(result.getRequest()).getParameters()
-
-
-            self._stdout.println(request)
-            self._stdout.println("[path_params]:" + path_params)
-            
-        else:
-            # (Proxy) When Response
-            _tmp = "(HttpLister)Proxy response from "
-            
-            response = self._helpers.bytesToString(messageInfo.getResponse())
-                        
-            self._stdout.println(_tmp)
-            self._stdout.println(response)
-            # self._stdout.println(message.getMessageInfo().getResponse())
-
-
-    #
-    # implement IProxyListener
-    #
-    def processProxyMessage(self, messageIsRequest, message):
-        if messageIsRequest:
-            # (Proxy) When Request
-            _tmp = "(ProxyListener)Proxy request to "
-            
-            path = str(self._helpers.analyzeRequest(message.getMessageInfo().getRequest()).getHeaders()[0].split()[1])
-            val = message.getMessageInfo().getHttpService().getProtocol() + "://" \
-                    + message.getMessageInfo().getHttpService().getHost() + ":"   \
-                    + str(message.getMessageInfo().getHttpService().getPort()) + path
-                    
-            request = self._helpers.bytesToString(message.getMessageInfo().getRequest())
-            result = message.getMessageInfo()
-            path_params = str(self._helpers.analyzeRequest(result.getRequest()).getHeaders()[0].split()[1])
-            # params = self._helpers.analyzeRequest(result.getRequest()).getParameters()
-
-
-            self._stdout.println(request)
-            self._stdout.println("[path_params]:" + path_params)
-            
-        else:
-            # (Proxy) When Response
-            _tmp = "(ProxyListener)Proxy response from "
-
-            result = message.getMessageInfo()
-            response = self._helpers.bytesToString(message.getMessageInfo().getResponse())
-                        
-            self._stdout.println(_tmp)
-            self._stdout.println(response)
-            # self._stdout.println(message.getMessageInfo().getResponse())
-
-
-    # 
-    # -----------------------
-    # 
-
 
 
     # 
@@ -222,7 +141,7 @@ class BurpExtender(IBurpExtender,
     # implement ITab
     #
     def getTabCaption(self):
-        return "MyLogger"
+        return "MyProxy"
 
     def getUiComponent(self):
         # return self._splitpane
@@ -243,117 +162,51 @@ class BurpExtender(IBurpExtender,
         self.fireTableRowsInserted(row, row)
         self._lock.release()
 
-    #
+    # ----------------------------
+    # 
+
+
+    # 
     # extend AbstractTableModel
-    #
+    # 
     def getRowCount(self):
         try:
             return self._log.size()
         except:
             return 0
-
+        
     def getColumnCount(self):
         return 2
-
+    
     def getColumnName(self, columnIndex):
         if columnIndex == 0:
-            return "Tool"
+            return "Tool1"
         if columnIndex == 1:
-            return "URL"
-        return ""
-
+            return "URL2"
+        return '"'
+    
     def getValueAt(self, rowIndex, columnIndex):
         logEntry = self._log.get(rowIndex)
         if columnIndex == 0:
             return self._callbacks.getToolName(logEntry._tool)
         if columnIndex == 1:
             return logEntry._url.toString()
-        return ""
-
-    #
+        return '"'
+    
+    # 
     # implement IMessageEditorController
-    # this allows our request/response viewers to obtain details about the messages being displayed
-    #
+    # this allows our request/response viewser to obtain details about the messages being displayed
+    # 
     def getHttpService(self):
         return self._currentlyDisplayedItem.getHttpService()
-
+    
     def getRequest(self):
         return self._currentlyDisplayedItem.getRequest()
-
+    
     def getResponse(self):
-        return self._currentlyDisplayedItem.getResponse()
-
-    # 
-    # ----------------------------
-    # 
+        return self.currentlyDisplayedItem.getResponse()
 
 
-
-    # 
-    # *** [MessageEditorTab]
-    # ----------------------------
-    #
-    # Create tab
-    # 
-    def createNewInstance(self, controller, editable):
-        return MyTab(self, controller, editable)
-    
-    
-class MyTab(IMessageEditorTab):
-    def __init__(self, extender, controller, editable):
-        self._extender = extender
-        self._editable = editable
-
-        # create an instance of Burp's text editor
-        self._txtInput = extender._callbacks.createTextEditor()
-        self._txtInput.setEditable(editable)
-        
-        
-    # 
-    # implement IMessageEditorTab
-    # 
-    
-    def getTabCaption(self):
-        return "mytab captions"
-    
-    def getUiComponent(self):
-        return self._txtInput.getComponent()
-    
-    def isEnabled(self, content, isRequest):
-        # What Conditions enable this tab.
-        # ex) enable this tab for requests containg a data parameter.
-        
-        # [memo] If parameter"data" in Requset, 
-        return True # isRequest \
-        #     not self._extender._helpers.getRequestParameter(content, "data") is None
-            
-            
-    def setMessage(self, content, isRequest):
-        # "content" == Request Header, Body
-        if content is None:
-            # clear our display
-            self._txtInput.setText(None)
-            self._txtInput.setEditable(False)
-            
-        else:
-            # Get parameter from "content(Request)"
-            # parameter = self._extender._helpers.getRequestParameter(content, "data")
-            
-            self._txtInput.setText("set Message here")
-            self._txtInput.setEditable(self._editable)
-            # self._txtInput.setEditable(True)
-            
-        # remember the displayed content
-        # XXX: Unknown 7/5
-        # self._currentMessage = content + 'add from set Messesage'
-
-
-    #
-    # ----------------------------
-    #
-    
-
-    
 # 
 # *** [ addSuiteTab ]
 # ----------------------------
@@ -389,3 +242,171 @@ class LogEntry:
 #
 # ----------------------------
 #
+
+
+
+#    # 
+#    # ***[EventLisetr] 
+#    # -----------------------------
+#    #
+#    # implement IHttpListener
+#    #
+#    def processHttpMessage(self, toolFlag, messageIsRequest, messageInfo):
+#        # _tmp = ''
+#        # _tmp += messageInfo.getHttpService().toString() + " [" + self._callbacks.getToolName(toolFlag) + "]"
+#        # self._stdout.println(_tmp)
+#
+#        if messageIsRequest:
+#            # (Proxy) When Request
+#            _tmp = "(HttpListener)Proxy request to "
+#            
+#            path = str(self._helpers.analyzeRequest(messageInfo.getRequest()).getHeaders()[0].split()[1])
+#            val = messageInfo.getHttpService().getProtocol() + "://" \
+#                    + messageInfo.getHttpService().getHost() + ":"   \
+#                    + str(messageInfo.getHttpService().getPort()) + path
+#                    
+#            request = self._helpers.bytesToString(messageInfo.getRequest())
+#            result = messageInfo
+#            path_params = str(self._helpers.analyzeRequest(result.getRequest()).getHeaders()[0].split()[1])
+#            # params = self._helpers.analyzeRequest(result.getRequest()).getParameters()
+#
+#
+#            self._stdout.println(request)
+#            self._stdout.println("[path_params]:" + path_params)
+#            
+#        else:
+#            # (Proxy) When Response
+#            _tmp = "(HttpLister)Proxy response from "
+#            
+#            response = self._helpers.bytesToString(messageInfo.getResponse())
+#                        
+#            self._stdout.println(_tmp)
+#            self._stdout.println(response)
+#            # self._stdout.println(message.getMessageInfo().getResponse())
+#
+
+
+#    #
+#    # implement IProxyListener
+#    #
+#    def processProxyMessage(self, messageIsRequest, message):
+#        if messageIsRequest:
+#            # (Proxy) When Request
+#            _tmp = "(ProxyListener)Proxy request to "
+#            
+#            path = str(self._helpers.analyzeRequest(message.getMessageInfo().getRequest()).getHeaders()[0].split()[1])
+#            val = message.getMessageInfo().getHttpService().getProtocol() + "://" \
+#                    + message.getMessageInfo().getHttpService().getHost() + ":"   \
+#                    + str(message.getMessageInfo().getHttpService().getPort()) + path
+#                    
+#            request = self._helpers.bytesToString(message.getMessageInfo().getRequest())
+#            result = message.getMessageInfo()
+#            path_params = str(self._helpers.analyzeRequest(result.getRequest()).getHeaders()[0].split()[1])
+#            # params = self._helpers.analyzeRequest(result.getRequest()).getParameters()
+#
+#
+#            self._stdout.println(request)
+#            self._stdout.println("[path_params]:" + path_params)
+#            
+#        else:
+#            # (Proxy) When Response
+#            _tmp = "(ProxyListener)Proxy response from "
+#
+#            result = message.getMessageInfo()
+#            response = self._helpers.bytesToString(message.getMessageInfo().getResponse())
+#                        
+#            self._stdout.println(_tmp)
+#            self._stdout.println(response)
+#            # self._stdout.println(message.getMessageInfo().getResponse())
+#
+#
+#    # 
+#    # -----------------------
+#    # 
+
+
+
+
+
+#    # 
+#    # *** [MessageEditorTab]
+#    # ----------------------------
+#    #
+#    # Create tab
+#    # 
+#    def createNewInstance(self, controller, editable):
+#        return MyTab(self, controller, editable)
+#    
+#    
+#class MyTab(IMessageEditorTab):
+#    def __init__(self, extender, controller, editable):
+#        self._extender = extender
+#        self._editable = editable
+#
+#        # create an instance of Burp's text editor
+#        self._txtInput = extender._callbacks.createTextEditor()
+#        self._txtInput.setEditable(editable)
+#        
+#        
+#    # 
+#    # implement IMessageEditorTab
+#    # 
+#    
+#    def getTabCaption(self):
+#        return "mytab captions"
+#    
+#    def getUiComponent(self):
+#        return self._txtInput.getComponent()
+#    
+#    def isEnabled(self, content, isRequest):
+#        # What Conditions enable this tab.
+#        # ex) enable this tab for requests containg a data parameter.
+#        
+#        # [memo] If parameter"data" in Requset, 
+#        return True # isRequest \
+#        #     not self._extender._helpers.getRequestParameter(content, "data") is None
+#            
+#            
+#    def setMessage(self, content, isRequest):
+#        # "content" == Request Header, Body
+#        if content is None:
+#            # clear our display
+#            self._txtInput.setText(None)
+#            self._txtInput.setEditable(False)
+#            
+#        else:
+#            # Get parameter from "content(Request)"
+#            # parameter = self._extender._helpers.getRequestParameter(content, "data")
+#            
+#            self._txtInput.setText("set Message here")
+#            self._txtInput.setEditable(self._editable)
+#            # self._txtInput.setEditable(True)
+#            
+#        # remember the displayed content
+#        # XXX: Unknown 7/5
+#        # self._currentMessage = content + 'add from set Messesage'
+#
+#
+#    #
+#    # ----------------------------
+#    #
+#    
+#
+#
+#
+#
+## class IntruderPayloadGenerator(IIntruderPayloadGenerator):
+##     def __init__(self):
+##         self._payloadIndex = 0
+##         
+##         def hasMorePayloads(self):
+##             return self._payloadIndex < len(PAYLOADS)
+##         
+##         def getNextPayload(self, baseValue):
+##             payload = PAYLOADS[self._payloadIndex]
+##             self._payloadIndex = self._payloadIndex + 1
+##             
+##             return payload
+##         
+##         def reset(self):
+##             self._payloadIndex = 0
